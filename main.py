@@ -38,6 +38,25 @@ def validate(text):
     return True
 
 
+def verify_entry(path, entry):
+    """Re-read entry.txt after writing and prove it holds exactly the entry.
+
+    Checks the bytes on disk are the entry, byte for byte: no trailing
+    newline, the same byte length, and the decoded text passes every gate.
+    Returns the number of bytes verified.
+    """
+    with open(path, "rb") as f:
+        raw = f.read()
+    assert not raw.endswith(b"\n"), "entry.txt must have no trailing newline"
+    assert len(raw) == len(entry.encode("utf-8")), (
+        "entry.txt byte length differs from the intended joke"
+    )
+    written = raw.decode("utf-8")
+    assert written == entry, "entry.txt content differs from the intended joke"
+    validate(written)
+    return len(raw)
+
+
 def main():
     validate(JOKE)
 
@@ -48,15 +67,9 @@ def main():
     with open(path, "wb") as f:
         f.write(JOKE.encode("utf-8"))
 
-    # Read the bytes back and re-validate what actually landed on disk.
-    with open(path, "rb") as f:
-        raw = f.read()
-    assert not raw.endswith(b"\n"), "entry.txt must have no trailing newline"
-    written = raw.decode("utf-8")
-    assert written == JOKE, "entry.txt content differs from the intended joke"
-    validate(written)
+    nbytes = verify_entry(path, JOKE)
 
-    print("Wrote %s (%d characters)" % (path, len(written)))
+    print("Wrote %s (%d characters, %d bytes verified)" % (path, len(JOKE), nbytes))
 
 
 if __name__ == "__main__":
